@@ -16,8 +16,6 @@ async function CreateGame(name: string, clear: React.Dispatch<React.SetStateActi
             name: name
         })
 
-        console.log(ref.id)
-
         let a = Array(64)
         a.fill(0)
         a[3 * 8 + 3] = -1
@@ -55,7 +53,6 @@ const ListView: React.FC<{setGameKey: React.Dispatch<React.SetStateAction<any>>,
         update(() => {
                 return onSnapshot(doc(db, "gameboards", key), (doc) => {
                     props.setGameData(doc.data())
-                    console.log(doc.data())
                 })
             }
         )

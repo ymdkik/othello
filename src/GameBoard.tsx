@@ -5,7 +5,7 @@ import { doc, setDoc } from "firebase/firestore";
 
 async function UpdateBoard(key: string, nextTurn: turnT, newBoard: Array<koma>) {
     await setDoc(doc(db, "gameboards", key), {
-        turn: nextTurn * -1,
+        turn: nextTurn,
         board: newBoard,
     })
 }
@@ -27,15 +27,15 @@ const BoardView: React.FC<{gamekey: string, data: dataT}> = (props) => {
         let cnt: number = 0
         let tmp = d.board.slice()
         
-        direction.forEach(v => {
+        for(let i: number = 0; i < 8; i++) {
             let dx: number = Number(x), dy:number = Number(y)
-            if(0 <= (dx += Number(v[0])) && dx < 8 &&
-               0 <= (dy += Number(v[1])) && dy < 8 &&
+            if(0 <= (dx += Number(direction[i][0])) && dx < 8 &&
+               0 <= (dy += Number(direction[i][1])) && dy < 8 &&
                d.board[dy*8 + dx] === d.turn * -1){
                 const change: Array<number> = []
                 change.push(dy*8 + dx)
-                while(0 <= (dx += Number(v[0])) && dx < 8 &&
-                      0 <= (dy += Number(v[1])) && dy < 8){
+                while(0 <= (dx += Number(direction[i][0])) && dx < 8 &&
+                      0 <= (dy += Number(direction[i][1])) && dy < 8){
                     if(d.board[dy*8 + dx] === 0) {
                         break
                     } else if(d.board[dy*8 + dx] === d.turn * -1) {
@@ -43,17 +43,44 @@ const BoardView: React.FC<{gamekey: string, data: dataT}> = (props) => {
                     } else {
                         change.forEach(yx => {
                             tmp[yx] = d.turn
-                            cnt += 1
                         })
+                        cnt += 1
                         break
                     }
                 }
             }
-        })
+        }
 
         if(cnt !== 0) {
             tmp[Number(y) * 8 + Number(x)] = d.turn
-            UpdateBoard(props.gamekey, d.turn, tmp)
+            let nextcnt: number = 0
+
+            for(let y:number = 0; y < 8; y++){
+                for(let x:number = 0; x < 8; x++){
+                    if(tmp[y * 8 + x] !== 0) continue
+                    for(let i: number = 0; i < 8; i++) {
+                        let dx: number = Number(x), dy:number = Number(y)
+                        if(0 <= (dx += Number(direction[i][0])) && dx < 8 &&
+                           0 <= (dy += Number(direction[i][1])) && dy < 8 &&
+                           tmp[dy*8 + dx] === d.turn){
+                            while(0 <= (dx += Number(direction[i][0])) && dx < 8 &&
+                                  0 <= (dy += Number(direction[i][1])) && dy < 8){
+                                if(tmp[dy*8 + dx] === 0) {
+                                    break
+                                } else if(tmp[dy*8 + dx] === d.turn) {
+                                    continue
+                                } else {
+                                    nextcnt += 1
+                                    break
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            const nextTurn: turnT = nextcnt === 0 ? d.turn : (d.turn === 1 ? -1 : 1)
+            UpdateBoard(props.gamekey, nextTurn, tmp)
         }
     }
 

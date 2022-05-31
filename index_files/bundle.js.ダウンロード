@@ -203,7 +203,7 @@ var _jsxFileName = "C:\\Users\\\u5C71\u7530\u6D77\u8F1D\\Desktop\\game\\src\\Gam
 
 async function UpdateBoard(key, nextTurn, newBoard) {
   await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.setDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(_Firebase__WEBPACK_IMPORTED_MODULE_1__.db, "gameboards", key), {
-    turn: nextTurn * -1,
+    turn: nextTurn,
     board: newBoard
   });
 }
@@ -230,15 +230,16 @@ const BoardView = props => {
     if (d.board[Number(y) * 8 + Number(x)] !== 0) return;
     let cnt = 0;
     let tmp = d.board.slice();
-    direction.forEach(v => {
+
+    for (let i = 0; i < 8; i++) {
       let dx = Number(x),
           dy = Number(y);
 
-      if (0 <= (dx += Number(v[0])) && dx < 8 && 0 <= (dy += Number(v[1])) && dy < 8 && d.board[dy * 8 + dx] === d.turn * -1) {
+      if (0 <= (dx += Number(direction[i][0])) && dx < 8 && 0 <= (dy += Number(direction[i][1])) && dy < 8 && d.board[dy * 8 + dx] === d.turn * -1) {
         const change = [];
         change.push(dy * 8 + dx);
 
-        while (0 <= (dx += Number(v[0])) && dx < 8 && 0 <= (dy += Number(v[1])) && dy < 8) {
+        while (0 <= (dx += Number(direction[i][0])) && dx < 8 && 0 <= (dy += Number(direction[i][1])) && dy < 8) {
           if (d.board[dy * 8 + dx] === 0) {
             break;
           } else if (d.board[dy * 8 + dx] === d.turn * -1) {
@@ -246,17 +247,44 @@ const BoardView = props => {
           } else {
             change.forEach(yx => {
               tmp[yx] = d.turn;
-              cnt += 1;
             });
+            cnt += 1;
             break;
           }
         }
       }
-    });
+    }
 
     if (cnt !== 0) {
       tmp[Number(y) * 8 + Number(x)] = d.turn;
-      UpdateBoard(props.gamekey, d.turn, tmp);
+      let nextcnt = 0;
+
+      for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
+          if (tmp[y * 8 + x] !== 0) continue;
+
+          for (let i = 0; i < 8; i++) {
+            let dx = Number(x),
+                dy = Number(y);
+
+            if (0 <= (dx += Number(direction[i][0])) && dx < 8 && 0 <= (dy += Number(direction[i][1])) && dy < 8 && tmp[dy * 8 + dx] === d.turn) {
+              while (0 <= (dx += Number(direction[i][0])) && dx < 8 && 0 <= (dy += Number(direction[i][1])) && dy < 8) {
+                if (tmp[dy * 8 + dx] === 0) {
+                  break;
+                } else if (tmp[dy * 8 + dx] === d.turn) {
+                  continue;
+                } else {
+                  nextcnt += 1;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      const nextTurn = nextcnt === 0 ? d.turn : d.turn === 1 ? -1 : 1;
+      UpdateBoard(props.gamekey, nextTurn, tmp);
     }
   };
 
@@ -277,17 +305,17 @@ const BoardView = props => {
         children: ba[d.board[Number(y) * 8 + Number(x)]]
       }, Number(x), false, {
         fileName: _jsxFileName,
-        lineNumber: 63,
+        lineNumber: 90,
         columnNumber: 32
       }, undefined))
     }, Number(y), false, {
       fileName: _jsxFileName,
-      lineNumber: 62,
+      lineNumber: 89,
       columnNumber: 29
     }, undefined))
   }, void 0, false, {
     fileName: _jsxFileName,
-    lineNumber: 61,
+    lineNumber: 88,
     columnNumber: 9
   }, undefined);
 };
@@ -378,7 +406,6 @@ async function CreateGame(name, clear) {
     const ref = await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.addDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.collection)(_Firebase__WEBPACK_IMPORTED_MODULE_1__.db, "gamelist"), {
       name: name
     });
-    console.log(ref.id);
     let a = Array(64);
     a.fill(0);
     a[3 * 8 + 3] = -1;
@@ -421,7 +448,6 @@ const ListView = props => {
     update(() => {
       return (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.onSnapshot)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(_Firebase__WEBPACK_IMPORTED_MODULE_1__.db, "gameboards", key), doc => {
         props.setGameData(doc.data());
-        console.log(doc.data());
       });
     });
   };
@@ -438,7 +464,7 @@ const ListView = props => {
         onChange: e => setGameNameIn(e.target.value)
       }, void 0, false, {
         fileName: _jsxFileName,
-        lineNumber: 67,
+        lineNumber: 64,
         columnNumber: 17
       }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxDEV)(_mui_material_Button__WEBPACK_IMPORTED_MODULE_5__["default"], {
         variant: "outlined",
@@ -446,12 +472,12 @@ const ListView = props => {
         children: "New Game"
       }, void 0, false, {
         fileName: _jsxFileName,
-        lineNumber: 68,
+        lineNumber: 65,
         columnNumber: 17
       }, undefined)]
     }, void 0, true, {
       fileName: _jsxFileName,
-      lineNumber: 66,
+      lineNumber: 63,
       columnNumber: 13
     }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxDEV)("div", {
       style: {
@@ -461,7 +487,7 @@ const ListView = props => {
         children: "-------------Game List-------------"
       }, void 0, false, {
         fileName: _jsxFileName,
-        lineNumber: 71,
+        lineNumber: 68,
         columnNumber: 17
       }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxDEV)(_mui_material_Box__WEBPACK_IMPORTED_MODULE_6__["default"], {
         sx: {
@@ -477,32 +503,32 @@ const ListView = props => {
               primary: v.name
             }, void 0, false, {
               fileName: _jsxFileName,
-              lineNumber: 80,
+              lineNumber: 77,
               columnNumber: 29
             }, undefined)
           }, i, false, {
             fileName: _jsxFileName,
-            lineNumber: 75,
+            lineNumber: 72,
             columnNumber: 29
           }, undefined))
         }, void 0, false, {
           fileName: _jsxFileName,
-          lineNumber: 73,
+          lineNumber: 70,
           columnNumber: 21
         }, undefined)
       }, void 0, false, {
         fileName: _jsxFileName,
-        lineNumber: 72,
+        lineNumber: 69,
         columnNumber: 17
       }, undefined)]
     }, void 0, true, {
       fileName: _jsxFileName,
-      lineNumber: 70,
+      lineNumber: 67,
       columnNumber: 13
     }, undefined)]
   }, void 0, true, {
     fileName: _jsxFileName,
-    lineNumber: 65,
+    lineNumber: 62,
     columnNumber: 9
   }, undefined);
 };
@@ -102004,7 +102030,7 @@ function combine(array, callback) {
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("8c913ff03a219c1144f5")
+/******/ 		__webpack_require__.h = () => ("d33208b277154f00cf47")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
