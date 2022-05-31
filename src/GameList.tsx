@@ -9,7 +9,6 @@ import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import List from '@mui/material/List';
 
-
 async function CreateGame(name: string, clear: React.Dispatch<React.SetStateAction<string>>) {
     if(name){
         clear("")
