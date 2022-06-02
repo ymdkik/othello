@@ -6,7 +6,7 @@ import ListView from "./GameList"
 
 export type koma = -1 | 0 | 1
 export type turnT = -1 | 1
-export type dataT = {board: Array<koma>, turn: turnT}
+export type dataT = {board: {[key: number]: Array<koma>}, turn: {[key: number]: turnT}, cnt: number}
 
 const App: React.FC = () => {
     const [key, setKey] = useState<string>()

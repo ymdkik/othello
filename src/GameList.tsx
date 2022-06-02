@@ -24,8 +24,9 @@ async function CreateGame(name: string, clear: React.Dispatch<React.SetStateActi
         a[4 * 8 + 3] = 1
 
         await setDoc(doc(db, "gameboards", ref.id), {
-            turn: 1,
-            board: a,
+            turn: {0: 1},
+            cnt : 0,
+            board: {0: a},
         })
     }
 }

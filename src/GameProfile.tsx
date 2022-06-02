@@ -17,7 +17,7 @@ const ProfileView: React.FC<{gamekey: string, setGamekey: React.Dispatch<React.S
 
     const cnt = (t: turnT) => {
         let cnt = 0
-        props.data.board.forEach(b => {
+        props.data.board[props.data.cnt].forEach(b => {
             if(b === t) cnt++
         })
         return cnt
@@ -25,7 +25,7 @@ const ProfileView: React.FC<{gamekey: string, setGamekey: React.Dispatch<React.S
     
     return (
         <div>
-            <p>{turnStr[props.data.turn]}のターン</p>
+            <p>{turnStr[props.data.turn[props.data.cnt]]}のターン</p>
             <p>白: {cnt(-1)}</p>
             <p>黒: {cnt(1)}</p>
             <Button variant="outlined" color="error" onClick={() => DeleteUser(props.gamekey, props.setGamekey)}>End Game</Button>

@@ -3,15 +3,39 @@ import { koma, turnT, dataT } from './App';
 import { db } from './Firebase';
 import { doc, setDoc } from "firebase/firestore";
 
-async function UpdateBoard(key: string, nextTurn: turnT, newBoard: Array<koma>) {
-    await setDoc(doc(db, "gameboards", key), {
-        turn: nextTurn,
-        board: newBoard,
+async function UpdateBoard(key: string, turn: {[key: number]: turnT}, board: {[key: number]: Array<koma>}, cnt: number) {
+    console.log({
+        turn: turn,
+        cnt: cnt,
+        board: board,
     })
+    // await setDoc(doc(db, "gameboards", key), {
+    //     turn: turn,
+    //     cnt: cnt,
+    //     board: board,
+    // })
+    let a = Array(64)
+        a.fill(0)
+        a[3 * 8 + 3] = -1
+        a[4 * 8 + 4] = -1
+        a[3 * 8 + 4] = 1
+        a[4 * 8 + 3] = 1
+    
+    const b: {[key: number]: Array<koma>} = {0: a, 1:a, 2:a}
+    const c: number = 0
+    const t: {[key: number]: turnT} = {0: 1}
+    
+
+        await setDoc(doc(db, "gameboards", key), {
+            turn: turn,
+            cnt : cnt,
+            board: board,
+        })
 }
 
 const BoardView: React.FC<{gamekey: string, data: dataT}> = (props) => {
     const d: dataT = props.data
+    console.log(d)
 
     const ind: Array<Number> = [0, 1, 2, 3, 4, 5, 6, 7]
     const ba = {"-1": "〇", "0": "", "1": "●"}
@@ -23,26 +47,26 @@ const BoardView: React.FC<{gamekey: string, data: dataT}> = (props) => {
                                             [-1,  1], [ 0,  1], [ 1,  1],]
 
     const func = (x: Number, y: Number) => {
-        if(d.board[Number(y) * 8 + Number(x)] !== 0) return
+        if(d.board[d.cnt][Number(y) * 8 + Number(x)] !== 0) return
         let cnt: number = 0
-        let tmp = d.board.slice()
+        let tmp = d.board[d.cnt].slice()
         
         for(let i: number = 0; i < 8; i++) {
             let dx: number = Number(x), dy:number = Number(y)
             if(0 <= (dx += Number(direction[i][0])) && dx < 8 &&
                0 <= (dy += Number(direction[i][1])) && dy < 8 &&
-               d.board[dy*8 + dx] === d.turn * -1){
+               d.board[d.cnt][dy*8 + dx] === d.turn[cnt] * -1){
                 const change: Array<number> = []
                 change.push(dy*8 + dx)
                 while(0 <= (dx += Number(direction[i][0])) && dx < 8 &&
                       0 <= (dy += Number(direction[i][1])) && dy < 8){
-                    if(d.board[dy*8 + dx] === 0) {
+                    if(d.board[d.cnt][dy*8 + dx] === 0) {
                         break
-                    } else if(d.board[dy*8 + dx] === d.turn * -1) {
+                    } else if(d.board[d.cnt][dy*8 + dx] === d.turn[cnt] * -1) {
                         change.push(dy*8 + dx)
                     } else {
                         change.forEach(yx => {
-                            tmp[yx] = d.turn
+                            tmp[yx] = d.turn[cnt]
                         })
                         cnt += 1
                         break
@@ -52,7 +76,7 @@ const BoardView: React.FC<{gamekey: string, data: dataT}> = (props) => {
         }
 
         if(cnt !== 0) {
-            tmp[Number(y) * 8 + Number(x)] = d.turn
+            tmp[Number(y) * 8 + Number(x)] = d.turn[cnt]
             let nextcnt: number = 0
 
             for(let y:number = 0; y < 8; y++){
@@ -62,12 +86,12 @@ const BoardView: React.FC<{gamekey: string, data: dataT}> = (props) => {
                         let dx: number = Number(x), dy:number = Number(y)
                         if(0 <= (dx += Number(direction[i][0])) && dx < 8 &&
                            0 <= (dy += Number(direction[i][1])) && dy < 8 &&
-                           tmp[dy*8 + dx] === d.turn){
+                           tmp[dy*8 + dx] === d.turn[cnt]){
                             while(0 <= (dx += Number(direction[i][0])) && dx < 8 &&
                                   0 <= (dy += Number(direction[i][1])) && dy < 8){
                                 if(tmp[dy*8 + dx] === 0) {
                                     break
-                                } else if(tmp[dy*8 + dx] === d.turn) {
+                                } else if(tmp[dy*8 + dx] === d.turn[cnt]) {
                                     continue
                                 } else {
                                     nextcnt += 1
@@ -78,9 +102,20 @@ const BoardView: React.FC<{gamekey: string, data: dataT}> = (props) => {
                     }
                 }
             }
-            
-            const nextTurn: turnT = nextcnt === 0 ? d.turn : (d.turn === 1 ? -1 : 1)
-            UpdateBoard(props.gamekey, nextTurn, tmp)
+
+            if (nextcnt === 0) {
+                return
+            }
+
+            const board: {[key: number]: Array<koma>} = {}
+            const turn: {[key: number]: turnT} = {}
+            for(let i = 0; i < cnt; i++){
+                board[i] = d.board[i]
+                turn[i] = d.turn[i]
+            }
+            board[cnt] = tmp
+            turn[cnt] = d.turn[d.cnt] === 1 ? -1 : 1
+            UpdateBoard(props.gamekey, turn, board, d.cnt+1)
         }
     }
 
@@ -88,7 +123,7 @@ const BoardView: React.FC<{gamekey: string, data: dataT}> = (props) => {
         <div style={{width: "50%", margin: "50px auto"}}>
             {ind.map((y) => <div key={Number(y)} style={{display: "flex"}}>{
                 ind.map((x) => <button key={Number(x)} style={square} onClick={() => {func(Number(x), Number(y))}}>{
-                    ba[d.board[Number(y) * 8 + Number(x)]]
+                    ba[d.board[d.cnt][Number(y) * 8 + Number(x)]]
                 }</button>)
             }</div>)}
         </div>
