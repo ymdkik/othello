@@ -201,10 +201,11 @@ var _jsxFileName = "C:\\Users\\\u5C71\u7530\u6D77\u8F1D\\Desktop\\game\\src\\Gam
 
 
 
-async function UpdateBoard(key, nextTurn, newBoard) {
+async function UpdateBoard(key, turn, board, cnt) {
   await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.setDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(_Firebase__WEBPACK_IMPORTED_MODULE_1__.db, "gameboards", key), {
-    turn: nextTurn,
-    board: newBoard
+    turn: turn,
+    cnt: cnt,
+    board: board
   });
 }
 
@@ -227,26 +228,26 @@ const BoardView = props => {
   const direction = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
 
   const func = (x, y) => {
-    if (d.board[Number(y) * 8 + Number(x)] !== 0) return;
+    if (d.board[d.cnt][Number(y) * 8 + Number(x)] !== 0) return;
     let cnt = 0;
-    let tmp = d.board.slice();
+    let tmp = d.board[d.cnt].slice();
 
     for (let i = 0; i < 8; i++) {
       let dx = Number(x),
           dy = Number(y);
 
-      if (0 <= (dx += Number(direction[i][0])) && dx < 8 && 0 <= (dy += Number(direction[i][1])) && dy < 8 && d.board[dy * 8 + dx] === d.turn * -1) {
+      if (0 <= (dx += Number(direction[i][0])) && dx < 8 && 0 <= (dy += Number(direction[i][1])) && dy < 8 && d.board[d.cnt][dy * 8 + dx] === d.turn[d.cnt] * -1) {
         const change = [];
         change.push(dy * 8 + dx);
 
         while (0 <= (dx += Number(direction[i][0])) && dx < 8 && 0 <= (dy += Number(direction[i][1])) && dy < 8) {
-          if (d.board[dy * 8 + dx] === 0) {
+          if (d.board[d.cnt][dy * 8 + dx] === 0) {
             break;
-          } else if (d.board[dy * 8 + dx] === d.turn * -1) {
+          } else if (d.board[d.cnt][dy * 8 + dx] === d.turn[d.cnt] * -1) {
             change.push(dy * 8 + dx);
           } else {
             change.forEach(yx => {
-              tmp[yx] = d.turn;
+              tmp[yx] = d.turn[d.cnt];
             });
             cnt += 1;
             break;
@@ -256,7 +257,7 @@ const BoardView = props => {
     }
 
     if (cnt !== 0) {
-      tmp[Number(y) * 8 + Number(x)] = d.turn;
+      tmp[Number(y) * 8 + Number(x)] = d.turn[d.cnt];
       let nextcnt = 0;
 
       for (let y = 0; y < 8; y++) {
@@ -267,11 +268,11 @@ const BoardView = props => {
             let dx = Number(x),
                 dy = Number(y);
 
-            if (0 <= (dx += Number(direction[i][0])) && dx < 8 && 0 <= (dy += Number(direction[i][1])) && dy < 8 && tmp[dy * 8 + dx] === d.turn) {
+            if (0 <= (dx += Number(direction[i][0])) && dx < 8 && 0 <= (dy += Number(direction[i][1])) && dy < 8 && tmp[dy * 8 + dx] === d.turn[d.cnt]) {
               while (0 <= (dx += Number(direction[i][0])) && dx < 8 && 0 <= (dy += Number(direction[i][1])) && dy < 8) {
                 if (tmp[dy * 8 + dx] === 0) {
                   break;
-                } else if (tmp[dy * 8 + dx] === d.turn) {
+                } else if (tmp[dy * 8 + dx] === d.turn[d.cnt]) {
                   continue;
                 } else {
                   nextcnt += 1;
@@ -283,8 +284,23 @@ const BoardView = props => {
         }
       }
 
-      const nextTurn = nextcnt === 0 ? d.turn : d.turn === 1 ? -1 : 1;
-      UpdateBoard(props.gamekey, nextTurn, tmp);
+      const board = {};
+      const turn = {};
+
+      for (let i = 0; i <= d.cnt; i++) {
+        board[i] = d.board[i];
+        turn[i] = d.turn[i];
+      }
+
+      board[d.cnt + 1] = tmp;
+
+      if (nextcnt === 0) {
+        turn[d.cnt + 1] = d.turn[d.cnt];
+      } else {
+        turn[d.cnt + 1] = d.turn[d.cnt] === 1 ? -1 : 1;
+      }
+
+      UpdateBoard(props.gamekey, turn, board, d.cnt + 1);
     }
   };
 
@@ -302,20 +318,20 @@ const BoardView = props => {
         onClick: () => {
           func(Number(x), Number(y));
         },
-        children: ba[d.board[Number(y) * 8 + Number(x)]]
+        children: ba[d.board[d.cnt][Number(y) * 8 + Number(x)]]
       }, Number(x), false, {
         fileName: _jsxFileName,
-        lineNumber: 90,
+        lineNumber: 102,
         columnNumber: 32
       }, undefined))
     }, Number(y), false, {
       fileName: _jsxFileName,
-      lineNumber: 89,
+      lineNumber: 101,
       columnNumber: 29
     }, undefined))
   }, void 0, false, {
     fileName: _jsxFileName,
-    lineNumber: 88,
+    lineNumber: 100,
     columnNumber: 9
   }, undefined);
 };
@@ -413,8 +429,13 @@ async function CreateGame(name, clear) {
     a[3 * 8 + 4] = 1;
     a[4 * 8 + 3] = 1;
     await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.setDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_2__.doc)(_Firebase__WEBPACK_IMPORTED_MODULE_1__.db, "gameboards", ref.id), {
-      turn: 1,
-      board: a
+      turn: {
+        0: 1
+      },
+      cnt: 0,
+      board: {
+        0: a
+      }
     });
   }
 }
@@ -464,7 +485,7 @@ const ListView = props => {
         onChange: e => setGameNameIn(e.target.value)
       }, void 0, false, {
         fileName: _jsxFileName,
-        lineNumber: 64,
+        lineNumber: 65,
         columnNumber: 17
       }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxDEV)(_mui_material_Button__WEBPACK_IMPORTED_MODULE_5__["default"], {
         variant: "outlined",
@@ -472,12 +493,12 @@ const ListView = props => {
         children: "New Game"
       }, void 0, false, {
         fileName: _jsxFileName,
-        lineNumber: 65,
+        lineNumber: 66,
         columnNumber: 17
       }, undefined)]
     }, void 0, true, {
       fileName: _jsxFileName,
-      lineNumber: 63,
+      lineNumber: 64,
       columnNumber: 13
     }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxDEV)("div", {
       style: {
@@ -487,7 +508,7 @@ const ListView = props => {
         children: "-------------Game List-------------"
       }, void 0, false, {
         fileName: _jsxFileName,
-        lineNumber: 68,
+        lineNumber: 69,
         columnNumber: 17
       }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxDEV)(_mui_material_Box__WEBPACK_IMPORTED_MODULE_6__["default"], {
         sx: {
@@ -503,32 +524,32 @@ const ListView = props => {
               primary: v.name
             }, void 0, false, {
               fileName: _jsxFileName,
-              lineNumber: 77,
+              lineNumber: 78,
               columnNumber: 29
             }, undefined)
           }, i, false, {
             fileName: _jsxFileName,
-            lineNumber: 72,
+            lineNumber: 73,
             columnNumber: 29
           }, undefined))
         }, void 0, false, {
           fileName: _jsxFileName,
-          lineNumber: 70,
+          lineNumber: 71,
           columnNumber: 21
         }, undefined)
       }, void 0, false, {
         fileName: _jsxFileName,
-        lineNumber: 69,
+        lineNumber: 70,
         columnNumber: 17
       }, undefined)]
     }, void 0, true, {
       fileName: _jsxFileName,
-      lineNumber: 67,
+      lineNumber: 68,
       columnNumber: 13
     }, undefined)]
   }, void 0, true, {
     fileName: _jsxFileName,
-    lineNumber: 62,
+    lineNumber: 63,
     columnNumber: 9
   }, undefined);
 };
@@ -610,6 +631,28 @@ async function DeleteUser(gamekey, clear) {
 
 _c = DeleteUser;
 
+async function ReturnGame(data, key) {
+  if (data.cnt === 0) {
+    return;
+  }
+
+  const board = {};
+  const turn = {};
+
+  for (let i = 0; i < data.cnt; i++) {
+    board[i] = data.board[i];
+    turn[i] = data.turn[i];
+  }
+
+  await (0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__.setDoc)((0,firebase_firestore__WEBPACK_IMPORTED_MODULE_1__.doc)(_Firebase__WEBPACK_IMPORTED_MODULE_0__.db, "gameboards", key), {
+    turn: turn,
+    cnt: data.cnt - 1,
+    board: board
+  });
+}
+
+_c2 = ReturnGame;
+
 const ProfileView = props => {
   const turnStr = {
     "1": "黒",
@@ -618,7 +661,7 @@ const ProfileView = props => {
 
   const cnt = t => {
     let cnt = 0;
-    props.data.board.forEach(b => {
+    props.data.board[props.data.cnt].forEach(b => {
       if (b === t) cnt++;
     });
     return cnt;
@@ -626,22 +669,40 @@ const ProfileView = props => {
 
   return /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxDEV)("div", {
     children: [/*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxDEV)("p", {
-      children: [turnStr[props.data.turn], "\u306E\u30BF\u30FC\u30F3"]
+      children: [turnStr[props.data.turn[props.data.cnt]], "\u306E\u30BF\u30FC\u30F3"]
     }, void 0, true, {
       fileName: _jsxFileName,
-      lineNumber: 28,
+      lineNumber: 45,
       columnNumber: 13
     }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxDEV)("p", {
       children: ["\u767D: ", cnt(-1)]
     }, void 0, true, {
       fileName: _jsxFileName,
-      lineNumber: 29,
+      lineNumber: 46,
       columnNumber: 13
     }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxDEV)("p", {
       children: ["\u9ED2: ", cnt(1)]
     }, void 0, true, {
       fileName: _jsxFileName,
-      lineNumber: 30,
+      lineNumber: 47,
+      columnNumber: 13
+    }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxDEV)("p", {
+      children: ["\u30BF\u30FC\u30F3\u6570: ", props.data.cnt + 1]
+    }, void 0, true, {
+      fileName: _jsxFileName,
+      lineNumber: 48,
+      columnNumber: 13
+    }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxDEV)(_mui_material_Button__WEBPACK_IMPORTED_MODULE_3__["default"], {
+      variant: "outlined",
+      onClick: () => ReturnGame(props.data, props.gamekey),
+      children: "\u3072\u3068\u3064\u524D\u306B\u623B\u3059"
+    }, void 0, false, {
+      fileName: _jsxFileName,
+      lineNumber: 49,
+      columnNumber: 13
+    }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxDEV)("p", {}, void 0, false, {
+      fileName: _jsxFileName,
+      lineNumber: 50,
       columnNumber: 13
     }, undefined), /*#__PURE__*/(0,react_jsx_dev_runtime__WEBPACK_IMPORTED_MODULE_2__.jsxDEV)(_mui_material_Button__WEBPACK_IMPORTED_MODULE_3__["default"], {
       variant: "outlined",
@@ -650,23 +711,24 @@ const ProfileView = props => {
       children: "End Game"
     }, void 0, false, {
       fileName: _jsxFileName,
-      lineNumber: 31,
+      lineNumber: 51,
       columnNumber: 13
     }, undefined)]
   }, void 0, true, {
     fileName: _jsxFileName,
-    lineNumber: 27,
+    lineNumber: 44,
     columnNumber: 9
   }, undefined);
 };
 
-_c2 = ProfileView;
+_c3 = ProfileView;
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (ProfileView);
 
-var _c, _c2;
+var _c, _c2, _c3;
 
 __webpack_require__.$Refresh$.register(_c, "DeleteUser");
-__webpack_require__.$Refresh$.register(_c2, "ProfileView");
+__webpack_require__.$Refresh$.register(_c2, "ReturnGame");
+__webpack_require__.$Refresh$.register(_c3, "ProfileView");
 
 const $ReactRefreshModuleId$ = __webpack_require__.$Refresh$.moduleId;
 const $ReactRefreshCurrentExports$ = __react_refresh_utils__.getModuleExports(
@@ -102030,7 +102092,7 @@ function combine(array, callback) {
 /******/ 	
 /******/ 	/* webpack/runtime/getFullHash */
 /******/ 	(() => {
-/******/ 		__webpack_require__.h = () => ("d33208b277154f00cf47")
+/******/ 		__webpack_require__.h = () => ("7782f7eb3384b328a7bd")
 /******/ 	})();
 /******/ 	
 /******/ 	/* webpack/runtime/global */
