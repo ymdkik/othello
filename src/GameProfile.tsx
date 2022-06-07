@@ -28,6 +28,7 @@ const ProfileView: React.FC<{gamekey: string, setGamekey: React.Dispatch<React.S
             <p>{turnStr[props.data.turn[props.data.cnt]]}のターン</p>
             <p>白: {cnt(-1)}</p>
             <p>黒: {cnt(1)}</p>
+            <p>ターン数: {props.data.cnt + 1}</p>
             <Button variant="outlined" color="error" onClick={() => DeleteUser(props.gamekey, props.setGamekey)}>End Game</Button>
         </div>
     )
